@@ -66,7 +66,7 @@ export class ClothingController {
   async uploadPhotos(
     @Param('id') id: string,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body() body: { photoType: string; photoTypeName: string; description?: string; uploadedBy?: string },
+    @Body() body: { photoType: string; photoTypeName: string; description?: string; uploadedBy?: string; inspectionSource?: string },
   ) {
     try {
       const results = [];
@@ -79,6 +79,7 @@ export class ClothingController {
           fileName: file.originalname,
           description: body.description,
           uploadedBy: body.uploadedBy,
+          inspectionSource: body.inspectionSource as any,
         });
         results.push(photo);
       }
@@ -86,6 +87,26 @@ export class ClothingController {
     } catch (error) {
       throw new HttpException('上传失败', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @Post(':id/store-inspection')
+  storeInspection(@Param('id') id: string, @Body() body: { note?: string; hasDiscrepancy?: boolean; operator?: string }) {
+    return this.clothingService.storeInspection(id, body);
+  }
+
+  @Post(':id/factory-inspection')
+  factoryInspection(@Param('id') id: string, @Body() body: { note?: string; hasDiscrepancy?: boolean; operator?: string }) {
+    return this.clothingService.factoryInspection(id, body);
+  }
+
+  @Post(':id/handle-review')
+  handleReview(@Param('id') id: string, @Body() body: { result: 'confirmed' | 'rejected'; note?: string; operator?: string }) {
+    return this.clothingService.handleReview(id, body);
+  }
+
+  @Get(':id/can-wash')
+  canProceedToWash(@Param('id') id: string) {
+    return this.clothingService.canProceedToWash(id);
   }
 
   @Delete(':id')

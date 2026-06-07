@@ -8,9 +8,17 @@
           <template #header>
             <div class="card-header">
               <span class="title">基础信息</span>
-              <el-tag :type="StatusMap[detail?.status]?.type || 'info'" size="large">
-                {{ StatusMap[detail?.status]?.label }}
-              </el-tag>
+              <div class="header-tags">
+                <el-tag v-if="detail?.valueType === 'high'" type="warning" size="large">
+                  <el-icon><Star /></el-icon> 高价值衣物
+                </el-tag>
+                <el-tag v-if="detail?.needsReview" type="danger" size="large">
+                  <el-icon><Warning /></el-icon> 待复核
+                </el-tag>
+                <el-tag :type="StatusMap[detail?.status]?.type || 'info'" size="large">
+                  {{ StatusMap[detail?.status]?.label }}
+                </el-tag>
+              </div>
             </div>
           </template>
           <el-descriptions :column="3" border v-if="detail">
@@ -21,6 +29,19 @@
             <el-descriptions-item label="品牌">{{ detail.brand }}</el-descriptions-item>
             <el-descriptions-item label="颜色">{{ detail.color }}</el-descriptions-item>
             <el-descriptions-item label="材质">{{ detail.material }}</el-descriptions-item>
+            <el-descriptions-item v-if="detail.valueType === 'high'" label="价值类型">
+              <el-tag type="warning">高价值</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="detail.valueType === 'high'" label="质检状态">
+              <el-tag :type="InspectionStatusMap[detail.inspectionStatus]?.type || 'info'">
+                {{ InspectionStatusMap[detail.inspectionStatus]?.label }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="detail.valueType === 'high' && detail.reviewResult !== 'pending'" label="复核结果">
+              <el-tag :type="ReviewResultMap[detail.reviewResult]?.type || 'info'">
+                {{ ReviewResultMap[detail.reviewResult]?.label }}
+              </el-tag>
+            </el-descriptions-item>
             <el-descriptions-item label="口袋检查">
               <el-tag :type="detail.pocketChecked ? 'success' : 'danger'">
                 {{ detail.pocketChecked ? '已检查' : '未检查' }}
@@ -36,6 +57,39 @@
             <el-descriptions-item label="门店">{{ detail.storeName || '-' }}</el-descriptions-item>
             <el-descriptions-item label="批次号">{{ detail.batchNo || '-' }}</el-descriptions-item>
             <el-descriptions-item label="送洗时间">{{ formatDate(detail.createdAt) }}</el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+
+        <el-card shadow="never" class="mb20" v-if="detail?.valueType === 'high'">
+          <template #header>
+            <span class="title">
+              <el-icon><View /></el-icon> 双重质检信息
+            </span>
+          </template>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="门店质检备注" :span="2">
+              {{ detail.storeInspectionNote || '无' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="工厂质检备注" :span="2">
+              {{ detail.factoryInspectionNote || '无' }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="detail.needsReview" label="复核状态" :span="2">
+              <el-tag type="warning">复核中</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="detail.reviewResult !== 'pending'" label="复核结果" :span="2">
+              <el-tag :type="ReviewResultMap[detail.reviewResult]?.type || 'info'">
+                {{ ReviewResultMap[detail.reviewResult]?.label }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="detail.reviewNote" label="复核备注" :span="2">
+              {{ detail.reviewNote }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="detail.reviewedBy" label="复核人">
+              {{ detail.reviewedBy }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="detail.reviewCompletedAt" label="复核时间">
+              {{ formatDate(detail.reviewCompletedAt) }}
+            </el-descriptions-item>
           </el-descriptions>
         </el-card>
 
@@ -169,7 +223,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { clothingApi } from '@/api'
 import type { Clothing, PhotoEvidence } from '@/types'
-import { StatusMap, CompStatusMap } from '@/types'
+import { StatusMap, CompStatusMap, InspectionStatusMap, ReviewResultMap } from '@/types'
+import { Star, Warning, View } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -186,6 +241,8 @@ const photoGroups = computed(() => {
     damage: '损伤照片',
     pickup: '取衣照片',
     compensation: '赔付照片',
+    store_inspection: '门店质检照片',
+    factory_inspection: '工厂质检照片',
   }
   
   const grouped: Record<string, PhotoEvidence[]> = {}
@@ -264,6 +321,11 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-tags {
+  display: flex;
+  gap: 8px;
 }
 
 .title {

@@ -150,6 +150,10 @@ npm run build && npm run preview
 | POST | /api/clothing/:id/store-receive | 门店签收 |
 | POST | /api/clothing/:id/pickup | 顾客取衣 |
 | POST | /api/clothing/:id/photos | 上传照片证据 |
+| POST | /api/clothing/:id/store-inspection | 门店质检提交 |
+| POST | /api/clothing/:id/factory-inspection | 工厂质检提交 |
+| POST | /api/clothing/:id/handle-review | 处理复核 |
+| GET | /api/clothing/:id/can-wash | 检查是否可进入清洗 |
 
 ### 赔付记录
 

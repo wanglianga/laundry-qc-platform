@@ -4,6 +4,9 @@ import { PhotoEvidence } from './photo-evidence.entity';
 import { Compensation } from './compensation.entity';
 
 export type ClothingStatus = 'received' | 'in_factory' | 'washing' | 'drying' | 'ironing' | 'returning' | 'ready' | 'picked_up' | 'complaint' | 'completed';
+export type ValueType = 'normal' | 'high';
+export type InspectionStatus = 'pending' | 'store_done' | 'factory_done' | 'reviewing' | 'reviewed' | 'completed';
+export type ReviewResult = 'pending' | 'confirmed' | 'rejected';
 
 @Entity()
 export class Clothing {
@@ -42,6 +45,33 @@ export class Clothing {
 
   @Column({ default: 'received' })
   status: ClothingStatus;
+
+  @Column({ default: 'normal' })
+  valueType: ValueType;
+
+  @Column({ default: 'pending' })
+  inspectionStatus: InspectionStatus;
+
+  @Column({ default: false })
+  needsReview: boolean;
+
+  @Column({ default: 'pending' })
+  reviewResult: ReviewResult;
+
+  @Column({ type: 'text', nullable: true })
+  storeInspectionNote: string;
+
+  @Column({ type: 'text', nullable: true })
+  factoryInspectionNote: string;
+
+  @Column({ type: 'text', nullable: true })
+  reviewNote: string;
+
+  @Column({ nullable: true })
+  reviewedBy: string;
+
+  @Column({ type: 'datetime', nullable: true })
+  reviewCompletedAt: Date;
 
   @Column({ nullable: true })
   storeId: string;

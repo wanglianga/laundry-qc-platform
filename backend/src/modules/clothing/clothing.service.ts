@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Clothing, ClothingStatus } from '../../entities/clothing.entity';
+import { Clothing, ClothingStatus, InspectionStatus, ValueType } from '../../entities/clothing.entity';
 import { FlowNode, NodeType } from '../../entities/flow-node.entity';
 
 @Injectable()
@@ -112,6 +112,14 @@ export class ClothingService {
 
   async factoryProcess(id: string, data: any): Promise<Clothing> {
     const clothing = await this.findOne(id);
+    
+    if (clothing.valueType === 'high') {
+      const canWash = await this.canProceedToWash(id);
+      if (!canWash) {
+        throw new BadRequestException('高价值衣物需完成双重质检并通过复核后才能进入清洗');
+      }
+    }
+    
     clothing.washingProcess = data.washingProcess;
     clothing.stainRemovalAttempt = data.stainRemovalAttempt;
     clothing.dryingMethod = data.dryingMethod;
@@ -152,5 +160,96 @@ export class ClothingService {
 
   async remove(id: string): Promise<void> {
     await this.clothingRepository.delete(id);
+  }
+
+  async storeInspection(id: string, data: { note?: string; hasDiscrepancy?: boolean; operator?: string }): Promise<Clothing> {
+    const clothing = await this.findOne(id);
+    
+    if (clothing.valueType !== 'high') {
+      throw new BadRequestException('仅高价值衣物需要双重质检');
+    }
+    
+    clothing.storeInspectionNote = data.note || '';
+    clothing.inspectionStatus = 'store_done';
+    
+    if (data.hasDiscrepancy) {
+      clothing.needsReview = true;
+      clothing.inspectionStatus = 'reviewing';
+      await this.addFlowNode(id, 'inspection', '门店质检', data.operator, 'store', '门店质检发现瑕疵差异，进入复核', false, '瑕疵差异');
+    } else {
+      await this.addFlowNode(id, 'inspection', '门店质检', data.operator, 'store', '门店质检完成，无异常');
+    }
+    
+    await this.clothingRepository.save(clothing);
+    return this.findOne(id);
+  }
+
+  async factoryInspection(id: string, data: { note?: string; hasDiscrepancy?: boolean; operator?: string }): Promise<Clothing> {
+    const clothing = await this.findOne(id);
+    
+    if (clothing.valueType !== 'high') {
+      throw new BadRequestException('仅高价值衣物需要双重质检');
+    }
+    
+    clothing.factoryInspectionNote = data.note || '';
+    
+    if (data.hasDiscrepancy) {
+      clothing.needsReview = true;
+      clothing.inspectionStatus = 'reviewing';
+      await this.addFlowNode(id, 'inspection', '工厂质检', data.operator, 'factory', '工厂质检发现瑕疵差异，进入复核', false, '瑕疵差异');
+    } else {
+      if (clothing.inspectionStatus === 'store_done' && !clothing.needsReview) {
+        clothing.inspectionStatus = 'completed';
+        await this.addFlowNode(id, 'inspection', '工厂质检', data.operator, 'factory', '双重质检完成，可进入清洗');
+      } else if (clothing.inspectionStatus === 'reviewing') {
+        clothing.inspectionStatus = 'reviewing';
+        await this.addFlowNode(id, 'inspection', '工厂质检', data.operator, 'factory', '工厂质检完成，等待复核');
+      } else {
+        clothing.inspectionStatus = 'factory_done';
+        await this.addFlowNode(id, 'inspection', '工厂质检', data.operator, 'factory', '工厂质检完成，等待门店确认');
+      }
+    }
+    
+    await this.clothingRepository.save(clothing);
+    return this.findOne(id);
+  }
+
+  async handleReview(id: string, data: { result: 'confirmed' | 'rejected'; note?: string; operator?: string }): Promise<Clothing> {
+    const clothing = await this.findOne(id);
+    
+    if (!clothing.needsReview || clothing.inspectionStatus !== 'reviewing') {
+      throw new BadRequestException('该衣物无需复核或已完成复核');
+    }
+    
+    clothing.reviewResult = data.result;
+    clothing.reviewNote = data.note || '';
+    clothing.reviewedBy = data.operator || '';
+    clothing.reviewCompletedAt = new Date();
+    clothing.needsReview = false;
+    
+    if (data.result === 'confirmed') {
+      clothing.inspectionStatus = 'completed';
+      await this.addFlowNode(id, 'review', '复核完成', data.operator, 'admin', '复核通过，可进入清洗');
+    } else {
+      clothing.inspectionStatus = 'completed';
+      await this.addFlowNode(id, 'review', '复核完成', data.operator, 'admin', `复核未通过: ${data.note || '原因未记录'}`, false, '复核未通过');
+    }
+    
+    await this.clothingRepository.save(clothing);
+    return this.findOne(id);
+  }
+
+  async canProceedToWash(id: string): Promise<boolean> {
+    const clothing = await this.findOne(id);
+    
+    if (clothing.valueType !== 'high') {
+      return true;
+    }
+    
+    if (clothing.needsReview) {
+      return false;
+    }
+    
+    return clothing.inspectionStatus === 'completed';
   }
 }

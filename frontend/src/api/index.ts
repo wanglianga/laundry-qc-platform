@@ -18,6 +18,10 @@ export const clothingApi = {
     api.post(`/clothing/${id}/photos`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  storeInspection: (id: string, data: any) => api.post(`/clothing/${id}/store-inspection`, data),
+  factoryInspection: (id: string, data: any) => api.post(`/clothing/${id}/factory-inspection`, data),
+  handleReview: (id: string, data: any) => api.post(`/clothing/${id}/handle-review`, data),
+  canWash: (id: string) => api.get(`/clothing/${id}/can-wash`),
   remove: (id: string) => api.delete(`/clothing/${id}`),
 }
 

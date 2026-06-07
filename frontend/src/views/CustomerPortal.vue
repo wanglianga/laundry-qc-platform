@@ -27,11 +27,18 @@
             <div class="text-muted">{{ row.color }} / {{ row.material }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="120">
+        <el-table-column label="状态" width="140">
           <template #default="{ row }">
-            <el-tag :type="StatusMap[row.status]?.type || 'info'">
-              {{ StatusMap[row.status]?.label }}
-            </el-tag>
+            <div>
+              <el-tag :type="StatusMap[row.status]?.type || 'info'">
+                {{ StatusMap[row.status]?.label }}
+              </el-tag>
+              <div v-if="row.valueType === 'high'" class="mt5">
+                <el-tag size="small" type="warning">
+                  <el-icon><Star /></el-icon> 高价值
+                </el-tag>
+              </div>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="预估价格" width="100">
@@ -40,12 +47,19 @@
         <el-table-column label="送洗时间" width="180">
           <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="viewDetail(row.id)">查看进度</el-button>
-            <el-button v-if="row.status === 'ready'" type="success" link @click="confirmPickup(row)">确认取衣</el-button>
-            <el-button v-if="row.status === 'completed' && !row.customerEvaluation" type="warning" link @click="showEvaluate(row)">去评价</el-button>
-            <el-button type="danger" link @click="showComplaint(row)">投诉/赔付</el-button>
+            <template v-if="row.valueType === 'high' && row.needsReview">
+              <el-tag type="warning" size="small" class="ml5">
+                <el-icon><Clock /></el-icon> 待确认
+              </el-tag>
+            </template>
+            <template v-else>
+              <el-button v-if="row.status === 'ready'" type="success" link @click="confirmPickup(row)">确认取衣</el-button>
+              <el-button v-if="row.status === 'completed' && !row.customerEvaluation" type="warning" link @click="showEvaluate(row)">去评价</el-button>
+              <el-button type="danger" link @click="showComplaint(row)">投诉/赔付</el-button>
+            </template>
           </template>
         </el-table-column>
       </el-table>
@@ -127,6 +141,7 @@ import { clothingApi, compensationApi } from '@/api'
 import type { Clothing } from '@/types'
 import { StatusMap } from '@/types'
 import { ElMessage } from 'element-plus'
+import { Star, Clock } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const searchPhone = ref('')
@@ -261,5 +276,13 @@ const formatDate = (date: string) => {
 .text-muted {
   color: #909399;
   font-size: 12px;
+}
+
+.mt5 {
+  margin-top: 5px;
+}
+
+.ml5 {
+  margin-left: 5px;
 }
 </style>

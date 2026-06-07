@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { Clothing } from './clothing.entity';
 
-export type NodeType = 'receive' | 'factory_in' | 'washing' | 'drying' | 'ironing' | 'factory_out' | 'return_store' | 'pickup' | 'complaint' | 'compensation';
+export type NodeType = 'receive' | 'factory_in' | 'washing' | 'drying' | 'ironing' | 'factory_out' | 'return_store' | 'pickup' | 'complaint' | 'compensation' | 'inspection' | 'review';
 
 @Entity()
 export class FlowNode {

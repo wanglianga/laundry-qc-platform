@@ -1,7 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { Clothing } from './clothing.entity';
 
-export type PhotoType = 'pre_defect' | 'washing_before' | 'washing_after' | 'damage' | 'pickup' | 'compensation';
+export type PhotoType = 'pre_defect' | 'washing_before' | 'washing_after' | 'damage' | 'pickup' | 'compensation' | 'store_inspection' | 'factory_inspection';
+export type InspectionSource = 'store' | 'factory';
 
 @Entity()
 export class PhotoEvidence {
@@ -25,6 +26,9 @@ export class PhotoEvidence {
 
   @Column({ nullable: true })
   uploadedBy: string;
+
+  @Column({ nullable: true })
+  inspectionSource: InspectionSource;
 
   @ManyToOne(() => Clothing, clothing => clothing.photos, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'clothingId' })
