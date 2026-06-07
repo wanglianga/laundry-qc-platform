@@ -108,6 +108,7 @@
               <div class="tabs">
                 <el-radio-group v-model="activeTab" size="small" @change="loadList">
                   <el-radio-button label="received">待送厂</el-radio-button>
+                  <el-radio-button label="returning">返店中</el-radio-button>
                   <el-radio-button label="ready">待取衣</el-radio-button>
                   <el-radio-button label="all">全部</el-radio-button>
                 </el-radio-group>
@@ -139,10 +140,11 @@
             <el-table-column label="登记时间" width="160">
               <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
             </el-table-column>
-            <el-table-column label="操作" width="200" fixed="right">
+            <el-table-column label="操作" width="260" fixed="right">
               <template #default="{ row }">
                 <el-button type="primary" link size="small" @click="viewDetail(row.id)">详情</el-button>
                 <el-button v-if="row.status === 'received'" type="success" link size="small" @click="sendToFactory(row.id)">送厂</el-button>
+                <el-button v-if="row.status === 'returning'" type="warning" link size="small" @click="storeReceive(row.id)">返店签收</el-button>
                 <el-button v-if="row.status === 'ready'" type="warning" link size="small" @click="quickPickup(row.id)">确认取衣</el-button>
               </template>
             </el-table-column>
@@ -255,6 +257,15 @@ const sendToFactory = async (id: string) => {
     await ElMessageBox.confirm('确认送往中央工厂？', '提示', { type: 'info' })
     await clothingApi.updateStatus(id, { status: 'in_factory', operator: form.storeName, operatorRole: 'store' })
     ElMessage.success('已送往工厂')
+    loadList()
+  } catch (e) {}
+}
+
+const storeReceive = async (id: string) => {
+  try {
+    await ElMessageBox.confirm('确认衣物已返店签收？', '提示', { type: 'warning' })
+    await clothingApi.storeReceive(id, { operator: form.storeName })
+    ElMessage.success('签收成功，已进入待取衣状态')
     loadList()
   } catch (e) {}
 }

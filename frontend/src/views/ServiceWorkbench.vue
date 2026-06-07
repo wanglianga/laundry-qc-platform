@@ -155,9 +155,10 @@
             <el-table-column label="创建时间" width="160">
               <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
             </el-table-column>
-            <el-table-column label="操作" width="120" fixed="right">
+            <el-table-column label="操作" width="200" fixed="right">
               <template #default="{ row }">
-                <el-button type="primary" link size="small" @click.stop="viewClothing(row.clothingId)">查看档案</el-button>
+                <el-button type="primary" link size="small" @click.stop="selectComp(row)">处理赔付</el-button>
+                <el-button type="info" link size="small" @click.stop="viewClothing(row.clothingId)">查看档案</el-button>
               </template>
             </el-table-column>
           </el-table>
